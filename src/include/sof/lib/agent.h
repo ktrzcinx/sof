@@ -20,6 +20,11 @@ struct sa {
 	uint64_t last_check;	/* time of last activity checking */
 	uint64_t panic_timeout;	/* threshold of panic */
 	uint64_t warn_timeout;	/* threshold of warning */
+#if CONFIG_LOAD_CNT
+	uint64_t last_gated_ticks[PLATFORM_CORE_COUNT];
+	uint64_t last_art_ticks[PLATFORM_CORE_COUNT];
+	int peak_loads[PLATFORM_CORE_COUNT];
+#endif
 	struct task work;
 };
 

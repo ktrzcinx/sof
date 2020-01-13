@@ -259,4 +259,17 @@ config DEBUG_IPC_COUNTERS
 	help
 	  Select for enabling tracing IPC counter in SRAM_REG mailbox
 
+config LOAD_CNT
+	bool "CPU load counter"
+	default y
+	help
+	  Measure CPU load in percents and trace this information.
+
+config LOAD_CNT_TRACE_PERIOD
+	int "CPU load trace period"
+	default 100
+	depends on LOAD_CNT
+	help
+	  Define how frequently trace information about CPU load.
+
 endmenu

@@ -11,6 +11,8 @@
  * tick. If the core exceeds the threshold by over 5% then the SA will emit
  * error trace. However if it will be exceeded by over 100% the panic will be
  * called.
+ * Moreover System Agent measure CPU load and regullary trace peak measured
+ * value between traces.
  */
 
 #include <sof/drivers/timer.h>
@@ -18,6 +20,7 @@
 #include <sof/lib/alloc.h>
 #include <sof/lib/clk.h>
 #include <sof/debug/panic.h>
+#include <sof/math/numbers.h>
 #include <sof/platform.h>
 #include <sof/schedule/ll_schedule.h>
 #include <sof/schedule/schedule.h>
@@ -35,11 +38,57 @@
 #define trace_sa_error(__e, ...) \
 	trace_error(TRACE_CLASS_SA, __e, ##__VA_ARGS__)
 
+#if CONFIG_LOAD_CNT
+static void sa_supervise_cpu_load(struct sa *sa, bool print_trace)
+{
+	int i, load_percentage;
+	int coreid = cpu_get_id();
+	int art_ticks = platform_timer_get(timer_get());
+	int gated_ticks = platform_timer_get(sof_get()->cpu_timer);
+	uint64_t delta_art, delta_gated;
+
+	/* calculate deltas */
+	delta_art = art_ticks - sa->last_art_ticks[coreid];
+	delta_gated = gated_ticks - sa->last_gated_ticks[coreid];
+
+	/* do not divide by a small number */
+	if (delta_art < 1000)
+		return;
+
+	/* update timestamps */
+	sa->last_art_ticks[coreid] = art_ticks;
+	sa->last_gated_ticks[coreid] = gated_ticks;
+
+	/* calculate load */
+	load_percentage = delta_gated * 100 / delta_art;
+	sa->peak_loads[i] = MAX(sa->peak_loads[i], load_percentage);
+
+	/* print load as a info or as a warning message */
+	if (print_trace) {
+		if (sa->peak_loads[i] < 80) {
+			trace_sa("sa_validate(), core %d peak load since last log %d%% (current %d%%)",
+					i, sa->peak_loads[i], load_percentage);
+		} else {
+			trace_sa_error("sa_validate() warning, core %d peak load since last log %d%% (current %d%% /\\%d)",
+					i, sa->peak_loads[i],
+					load_percentage, delta_art); //load_percentage);
+			/*trace_sa_error("sa_validate() warning, core %d peak load since last log deltas: %d/%d current load: %d",
+					delta_gated, delta_art,
+					load_percentage);*/
+		}
+		sa->peak_loads[i] = 0;
+	}
+}
+#endif
+
 static enum task_state sa_validate(void *data)
 {
 	struct sa *sa = data;
 	uint64_t current;
 	uint64_t delta;
+#if CONFIG_LOAD_CNT
+	static int print_cnt = 0;
+#endif /* CONFIG_LOAD_CNT */
 
 	/* calculate delta and update check timestamp */
 	current = platform_timer_get(timer_get());
@@ -54,6 +103,12 @@ static enum task_state sa_validate(void *data)
 	if (delta > sa->warn_timeout)
 		trace_sa_error("validate(), ll drift detected, delta = %u",
 			       delta);
+
+#if CONFIG_LOAD_CNT
+	/* supervise cpu and decrement print_conter */
+	sa_supervise_cpu_load(sa, print_cnt == 0);
+	print_cnt = print_cnt ? print_cnt - 1 : CONFIG_LOAD_CNT_TRACE_PERIOD;
+#endif /* CONFIG_LOAD_CNT */
 
 	return SOF_TASK_STATE_RESCHEDULE;
 }
