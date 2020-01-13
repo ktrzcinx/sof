@@ -35,14 +35,16 @@
 #define trace_sa_error(__e, ...) \
 	trace_error(TRACE_CLASS_SA, __e, ##__VA_ARGS__)
 
-static enum task_state validate(void *data)
+static enum task_state sa_validate(void *data)
 {
 	struct sa *sa = data;
 	uint64_t current;
 	uint64_t delta;
 
+	/* calculate delta and update check timestamp */
 	current = platform_timer_get(timer_get());
 	delta = current - sa->last_check;
+	sa->last_check = current;
 
 	/* panic timeout */
 	if (delta > sa->panic_timeout)
@@ -50,11 +52,8 @@ static enum task_state validate(void *data)
 
 	/* warning timeout */
 	if (delta > sa->warn_timeout)
-		trace_sa_error("validate(), ll drift detected, delta = "
-			       "%u", delta);
-
-	/* update last_check to current */
-	sa->last_check = current;
+		trace_sa_error("validate(), ll drift detected, delta = %u",
+			       delta);
 
 	return SOF_TASK_STATE_RESCHEDULE;
 }
@@ -69,7 +68,7 @@ void sa_init(struct sof *sof, uint64_t timeout)
 			  sizeof(*sof->sa));
 
 	/* set default timeouts */
-	ticks = clock_ms_to_ticks(PLATFORM_DEFAULT_CLOCK, 1) * timeout / 1000;
+	ticks = clock_ms_to_ticks(PLATFORM_DEFAULT_CLOCK, timeout)  / 1000;
 
 	/* TODO: change values after minimal drifts will be assured */
 	sof->sa->panic_timeout = 2 * ticks;	/* 100% delay */
@@ -79,7 +78,7 @@ void sa_init(struct sof *sof, uint64_t timeout)
 		 ticks, sof->sa->warn_timeout, sof->sa->panic_timeout);
 
 	schedule_task_init_ll(&sof->sa->work, SOF_SCHEDULE_LL_TIMER,
-			      SOF_TASK_PRI_HIGH, validate, sof->sa, 0, 0);
+			      SOF_TASK_PRI_HIGH, sa_validate, sof->sa, 0, 0);
 
 	schedule_task(&sof->sa->work, 0, timeout);
 
