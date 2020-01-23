@@ -25,8 +25,7 @@ static inline struct comp_buffer *create_test_sink(struct comp_dev *dev,
 	/* alloc sink and set default parameters */
 	buffer->sink = calloc(1, sizeof(struct comp_dev));
 	buffer->sink->state = COMP_STATE_PREPARE;
-	buffer->stream.frame_fmt = frame_fmt;
-	buffer->stream.channels = channels;
+	audio_stream_set_params(&buffer->stream, frame_fmt, 0, channels);
 	buffer->stream.free = 0;
 	buffer->stream.avail = 0;
 	buffer->pipeline_id = pipeline_id;
@@ -55,6 +54,7 @@ static inline struct comp_buffer *create_test_source(struct comp_dev *dev,
 	buffer->source->state = COMP_STATE_PREPARE;
 	buffer->stream.frame_fmt = frame_fmt;
 	buffer->stream.channels = channels;
+	audio_stream_set_params(&buffer->stream, frame_fmt, 0, channels);
 	buffer->stream.free = 0;
 	buffer->stream.avail = 0;
 	buffer->pipeline_id = pipeline_id;

@@ -77,8 +77,9 @@ static int setup(void **state)
 
 	/* allocate new sink buffer */
 	vol_state->sink = test_malloc(sizeof(*vol_state->sink));
-	vol_state->sink->stream.frame_fmt = parameters->sink_format;
-	vol_state->sink->stream.channels = parameters->channels;
+	audio_stream_set_params(&vol_state->state->stream,
+				parameters->sink_format, 0,
+				parameters->channels);
 	size = parameters->frames *
 	       audio_stream_frame_bytes(&vol_state->sink->stream);
 
@@ -91,8 +92,9 @@ static int setup(void **state)
 
 	/* allocate new source buffer */
 	vol_state->source = test_malloc(sizeof(*vol_state->source));
-	vol_state->source->stream.frame_fmt = parameters->source_format;
-	vol_state->source->stream.channels = parameters->channels;
+	audio_stream_set_params(&vol_state->source->stream,
+				parameters->source_format, 0,
+				parameters->channels);
 	size = parameters->frames *
 	       audio_stream_frame_bytes(&vol_state->source->stream);
 	vol_state->source->stream.addr = test_calloc(parameters->buffer_size_ms,

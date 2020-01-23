@@ -306,10 +306,10 @@ static void pipeline_set_params(struct comp_dev *comp,
 	list_for_item(clist, buffer_list) {
 		buffer = buffer_from_list(clist, struct comp_buffer, dir);
 
-		buffer->buffer_fmt = params->params.buffer_fmt;
-		buffer->stream.frame_fmt = params->params.frame_fmt;
-		buffer->stream.rate = params->params.rate;
-		buffer->stream.channels = params->params.channels;
+		audio_stream_set_params(&buffer->stream,
+					params->params.buffer_fmt,
+					params->params.rate,
+					params->params.channels);
 		for (i = 0; i < SOF_IPC_MAX_CHANNELS; i++)
 			buffer->chmap[i] = params->params.chmap[i];
 	}

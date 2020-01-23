@@ -114,12 +114,6 @@ static void destroy_comp(struct comp_driver *drv, struct comp_dev *dev)
 	drv->ops.free(dev);
 }
 
-static void init_buffer_pcm_params(struct comp_buffer *buf, int num_chans)
-{
-	buf->stream.channels = num_chans;
-	buf->stream.frame_fmt = SOF_IPC_FRAME_S32_LE;
-}
-
 static void create_sources(struct mix_test_case *tc)
 {
 	int src_idx;
@@ -136,7 +130,8 @@ static void create_sources(struct mix_test_case *tc)
 
 		src->comp = create_comp(&mock_comp, &drv_mock);
 		src->buf = buffer_new(&buf);
-		init_buffer_pcm_params(src->buf, tc->num_chans);
+		audio_stream_set_params(&src->buf->stream, SOF_IPC_FRAME_S32_LE,
+					48000, tc->num_chans);
 
 		src->buf->source = src->comp;
 		src->buf->sink = mixer_dev_mock;
@@ -207,7 +202,9 @@ static int test_setup(void **state)
 
 		post_mixer_buf->source = mixer_dev_mock;
 		post_mixer_buf->sink = post_mixer_comp;
-		init_buffer_pcm_params(post_mixer_buf, tc->num_chans);
+		audio_stream_set_params(&post_mixer_buf->stream,
+					SOF_IPC_FRAME_S32_LE, 48000,
+					tc->num_chans);
 
 		list_item_prepend(&post_mixer_buf->source_list,
 				  &mixer_dev_mock->bsink_list);

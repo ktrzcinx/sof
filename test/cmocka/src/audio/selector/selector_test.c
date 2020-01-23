@@ -63,8 +63,8 @@ static int setup(void **state)
 
 	/* allocate new sink buffer */
 	sel_state->sink = test_malloc(sizeof(*sel_state->sink));
-	sel_state->sink->frame_fmt = parameters->sink_format;
-	sel_state->sink->channels = parameters->out_channels;
+	audio_stream_set_params(sel_state->sink, parameters->sink_format, 0,
+				parameters->out_channels);
 	size = parameters->frames * audio_stream_frame_bytes(sel_state->sink);
 	pbuff = test_calloc(parameters->buffer_size_ms, size);
 	audio_stream_init(sel_state->sink, pbuff,
@@ -72,8 +72,8 @@ static int setup(void **state)
 
 	/* allocate new source buffer */
 	sel_state->source = test_malloc(sizeof(*sel_state->source));
-	sel_state->source->frame_fmt = parameters->source_format;
-	sel_state->source->channels = parameters->in_channels;
+	audio_stream_set_params(sel_state->source, parameters->source_format, 0,
+				parameters->in_channels);
 	size = parameters->frames * audio_stream_frame_bytes(sel_state->source);
 	pbuff = test_calloc(parameters->buffer_size_ms, size);
 	audio_stream_init(sel_state->source, pbuff,
