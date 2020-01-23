@@ -206,6 +206,33 @@ static inline void audio_stream_init(struct audio_stream *buffer,
 	audio_stream_reset(buffer);
 }
 
+static inline audio_stream_set_params(struct audio_stream *buffer,
+				      uint32_t sof_ipc_frame,
+				      uint32_t rate,
+				      uint16_t channels)
+{
+	assert(buffer);
+	assert(sof_ipc_frame == SOF_IPC_FRAME_S16_LE ||
+	       sof_ipc_frame == SOF_IPC_FRAME_S24_4LE ||
+	       sof_ipc_frame == SOF_IPC_FRAME_S32_LE ||
+	       sof_ipc_frame == SOF_IPC_FRAME_FLOAT);
+	assert(channels < SOF_IPC_MAX_CHANNELS);
+
+	buffer->frame_fmt = sof_ipc_frame;
+	buffer->channels = channels;
+	buffer->rate = rate;
+}
+
+static inline audio_stream_copy_params(struct audio_stream *buffer,
+				       const struct audio_stream *source)
+{
+	assert(source);
+
+	// assertion for buffer is inside following function
+	audio_stream_set_params(buffer, buffer->frame_fmt, buffer->rate,
+				buffer->channels);
+}
+
 static inline void audio_stream_copy(const struct audio_stream *source,
 				     struct audio_stream *sink, uint32_t bytes)
 {
