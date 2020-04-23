@@ -23,6 +23,11 @@ static void usage(char *name)
 	exit(0);
 }
 
+static int elf_parse_module(struct image *image, const char *path)
+{
+	return elf_read_module(&image->module, path, image->verbose);
+}
+
 int main(int argc, char *argv[])
 {
 	struct image image;
@@ -57,7 +62,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* read source elf file */
-	ret = elf_read_module(&image.module, argv[optind], image.verbose);
+	fprintf(stdout, "\nModule Reading %s\n", argv[optind]);
+	ret = elf_parse_module(&image, argv[optind]);
 	if (ret < 0)
 		goto out;
 
