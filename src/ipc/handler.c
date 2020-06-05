@@ -226,6 +226,8 @@ static int ipc_stream_pcm_params(uint32_t stream)
 	/* copy message with ABI safe method */
 	IPC_COPY_CMD(pcm_params, ipc->comp_data);
 
+	tr_err(&ipc_tr, "ipc: pcm params comp %d channels %d", pcm_params.comp_id, pcm_params.params.channels);
+
 	/* get the pcm_dev */
 	pcm_dev = ipc_get_comp_by_id(ipc, pcm_params.comp_id);
 	if (!pcm_dev) {
@@ -1337,7 +1339,7 @@ void ipc_cmd(struct sof_ipc_cmd_hdr *hdr)
 	platform_shared_commit(hdr, hdr->size);
 
 out:
-	tr_dbg(&ipc_tr, "ipc: last request %d returned %d", type, ret);
+	tr_dbg(&ipc_tr, "ipc: last request %X returned %d", type, ret);
 
 	/* if ret > 0, reply created and copied by cmd() */
 	if (ret <= 0) {

@@ -519,11 +519,13 @@ int platform_init(struct sof *sof)
 #elif CONFIG_TRACE
 	/* Initialize DMA for Trace*/
 	trace_point(TRACE_BOOT_PLATFORM_DMA_TRACE);
+	trace_point(0xBECA);
 	dma_trace_init_complete(sof->dmat);
 #endif
 
 	/* show heap status */
 	heap_trace_all(1);
+	trace_point(0xBECA12);
 
 	return 0;
 }

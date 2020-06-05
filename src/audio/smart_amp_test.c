@@ -48,7 +48,11 @@ static struct comp_dev *smart_amp_new(const struct comp_driver *drv,
 	if (!dev)
 		return NULL;
 
+	comp_info(dev, "smart_amp_new(): alloc");
+
 	sad = rzalloc(SOF_MEM_ZONE_RUNTIME, 0, SOF_MEM_CAPS_RAM, sizeof(*sad));
+
+	comp_info(dev, "smart_amp_new(): sad");
 
 	if (!sad) {
 		rfree(dev);
@@ -57,14 +61,22 @@ static struct comp_dev *smart_amp_new(const struct comp_driver *drv,
 
 	comp_set_drvdata(dev, sad);
 
+	comp_info(dev, "smart_amp_new(): drv");
+
 	sa = COMP_GET_IPC(dev, sof_ipc_comp_process);
+
+	comp_info(dev, "smart_amp_new(): ipc");
 
 	ret = memcpy_s(sa, sizeof(*sa), ipc_sa,
 		       sizeof(struct sof_ipc_comp_process));
 	assert(!ret);
 
+	comp_info(dev, "smart_amp_new(): memcpy");
+
 	cfg = (struct sof_smart_amp_config *)ipc_sa->data;
 	bs = ipc_sa->size;
+
+	comp_info(dev, "smart_amp_new(): if");
 
 	if ((bs > 0) && (bs < sizeof(struct sof_smart_amp_config))) {
 		comp_err(dev, "smart_amp_new(): failed to apply config");
@@ -75,7 +87,11 @@ static struct comp_dev *smart_amp_new(const struct comp_driver *drv,
 		return NULL;
 	}
 
+	comp_info(dev, "smart_amp_new(): if2");
+
 	memcpy_s(&sad->config, sizeof(struct sof_smart_amp_config), cfg, bs);
+
+	comp_info(dev, "smart_amp_new(): memcpy");
 
 	dev->state = COMP_STATE_READY;
 

@@ -38,7 +38,7 @@ void pm_runtime_init(struct sof *sof)
 
 void pm_runtime_get(enum pm_runtime_context context, uint32_t index)
 {
-	tr_dbg(&pm_tr, "pm_runtime_get()");
+	//tr_dbg(&pm_tr, "pm_runtime_get()");
 
 	switch (context) {
 	default:
@@ -60,7 +60,7 @@ void pm_runtime_get_sync(enum pm_runtime_context context, uint32_t index)
 
 void pm_runtime_put(enum pm_runtime_context context, uint32_t index)
 {
-	tr_dbg(&pm_tr, "pm_runtime_put()");
+	//tr_dbg(&pm_tr, "pm_runtime_put()");
 
 	switch (context) {
 	default:

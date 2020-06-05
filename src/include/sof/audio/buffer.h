@@ -273,6 +273,7 @@ static inline int buffer_set_params(struct comp_buffer *buffer,
 	int i;
 	int ch = buffer->stream.channels;
 
+
 	if (!params) {
 		buf_err(buffer, "buffer_set_params(): !params");
 		return -EINVAL;

@@ -121,9 +121,9 @@ int pipeline_connect(struct comp_dev *comp, struct comp_buffer *buffer,
 	uint32_t flags;
 
 	if (dir == PPL_CONN_DIR_COMP_TO_BUFFER)
-		comp_err(comp, "connect buffer %d as sink", buffer->id);
+		comp_err(comp, "connect buffer %d as sink, comp: %X buffer: %X", buffer->id, (uint32_t)comp, (uint32_t)buffer);
 	else
-		comp_err(comp, "connect buffer %d as source", buffer->id);
+		comp_err(comp, "connect buffer %d as source, comp: %X buffer: %X", buffer->id, (uint32_t)comp, (uint32_t)buffer);
 
 	irq_local_disable(flags);
 	list_item_prepend(buffer_comp_list(buffer, dir),

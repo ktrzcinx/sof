@@ -27,7 +27,7 @@
 DECLARE_SOF_UUID("edf-schedule", edf_sched_uuid, 0x77de2074, 0x828c, 0x4044,
 		 0xa4, 0x0b, 0x42, 0x0b, 0x72, 0x74, 0x9e, 0x8b);
 
-DECLARE_TR_CTX(edf_tr, SOF_UUID(edf_sched_uuid), LOG_LEVEL_INFO);
+DECLARE_TR_CTX(edf_tr, SOF_UUID(edf_sched_uuid), LOG_LEVEL_ERROR);
 
 struct edf_schedule_data {
 	struct list_item list;	/* list of tasks in priority queue */
