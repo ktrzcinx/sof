@@ -121,15 +121,22 @@ int pipeline_connect(struct comp_dev *comp, struct comp_buffer *buffer,
 	uint32_t flags;
 
 	if (dir == PPL_CONN_DIR_COMP_TO_BUFFER)
-		comp_info(comp, "connect buffer %d as sink", buffer->id);
+		comp_err(comp, "connect buffer %d as sink", buffer->id);
 	else
-		comp_info(comp, "connect buffer %d as source", buffer->id);
+		comp_err(comp, "connect buffer %d as source", buffer->id);
 
 	irq_local_disable(flags);
 	list_item_prepend(buffer_comp_list(buffer, dir),
 			  comp_buffer_list(comp, dir));
 	buffer_set_comp(buffer, comp, dir);
 	irq_local_enable(flags);
+
+	if(dir == PPL_CONN_DIR_COMP_TO_BUFFER)
+		comp_err(comp, "    connected comp %X (%X) to buffer %X DOWNSTREAM buff id %d",
+			 (uint32_t)buffer->sink, (uint32_t)comp, (uint32_t)buffer, buffer->id);
+	else
+		comp_err(comp, "    connected comp %X (%X) to buffer %X UPSTREAM buff id %d",
+			 (uint32_t)buffer->source, (uint32_t)comp, (uint32_t)buffer, buffer->id);
 
 	return 0;
 }

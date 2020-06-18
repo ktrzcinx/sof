@@ -1201,6 +1201,10 @@ static int ipc_glb_tplg_comp_connect(uint32_t header)
 	/* copy message with ABI safe method */
 	IPC_COPY_CMD(connect, ipc->comp_data);
 
+
+	tr_err(&ipc_tr, "ipc: rec connect %d -> %d",
+		connect.source_id, connect.sink_id);
+
 	return ipc_comp_connect(ipc,
 			(struct sof_ipc_pipe_comp_connect *)ipc->comp_data);
 }
