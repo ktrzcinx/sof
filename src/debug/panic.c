@@ -56,7 +56,7 @@ void panic_rewind(uint32_t p, uint32_t stack_rewind_frames,
 #endif
 
 	/* dump stack frames */
-	p = dump_stack(p, ext_offset, stack_rewind_frames, count, &stack_ptr);
+	p = dump_stack(p, ext_offset, 0, count, &stack_ptr);
 
 	/* dump DSP core registers
 	 * after arch_dump_regs() use only inline funcs if needed
