@@ -60,6 +60,68 @@ int ipc_process_on_core(uint32_t core)
 	return 1;
 }
 
+#define tplg_dump_buffer_elem(prefix, buff) \
+	if (buff) {\
+		tr_info(&ipc_tr, "           " prefix "_addr: %X\t id: %d.%d inter_core %d", (uint32_t)buff, buff->pipeline_id, buff->id, buff->inter_core); \
+		tr_info(&ipc_tr, "           " prefix "fmt: 0x%X rate:%d channels:%d", buff->stream.frame_fmt, buff->stream.rate, buff->stream.channels); \
+	} else \
+		tr_err(&ipc_tr,  "           " prefix "_addr: NULL !!!");
+
+#define tplg_dump_comp_elem(prefix, dev, condition) \
+	if (condition) \
+		tr_info(&ipc_tr, "           " prefix "_addr: %X\t id: %d.%d core %d", (uint32_t)dev, dev_comp_pipe_id(dev), dev->comp.id, dev->comp.core); \
+	else \
+		tr_err(&ipc_tr, "           sink_addr: NULL !!!");
+
+
+void topology_dump(struct ipc *ipc)
+{
+	struct ipc_comp_dev *icd;
+	struct comp_buffer *buff;
+	// struct comp_dev* dev;
+	struct list_item *clist;
+	struct list_item *slist;
+
+	trace_point(0xBECA0002);
+
+	list_for_item(clist, &ipc->comp_list) {
+		icd = container_of(clist, struct ipc_comp_dev, list);
+		switch(icd->type) {
+			case COMP_TYPE_COMPONENT:
+				tr_info(&ipc_tr, "tplg_dump: id: %d.%d #%d %s", dev_comp_pipe_id(icd->cd), icd->id, icd->core, icd->cd->tctx.uuid_p);
+				// tr_info(&ipc_tr, "           addr: %X pipe_core %d", (uint32_t)icd->cd, icd->cd->pipeline->ipc_pipe.core);
+				// list_for_item(slist, &icd->cd->bsource_list) {
+				// 	buff = container_of(slist, struct comp_buffer, sink_list);
+				// 	tplg_dump_buffer_elem("source", buff);
+				// }
+				list_for_item(slist, &icd->cd->bsink_list) {
+					buff = container_of(slist, struct comp_buffer, source_list);
+					tplg_dump_buffer_elem("sink", buff);
+				}
+			break;
+			case COMP_TYPE_PIPELINE:
+			break;
+			// case COMP_TYPE_BUFFER:
+			// 	buff = icd->cb;
+			// 	tr_info(&ipc_tr, "tplg_dump: id: %d.%d inter_core %d %s", buff->pipeline_id, buff->id, buff->inter_core, buff->tctx.uuid_p);
+			// 	tr_info(&ipc_tr, "           addr: %X", (uint32_t)buff);
+			// 	list_for_item(slist, &buff->source_list) {
+			// 		dev = container_of(slist, struct comp_dev, bsink_list);
+			// 		tplg_dump_comp_elem("source", dev, slist);
+			// 	}
+			// 	list_for_item(slist, &buff->sink_list) {
+			// 		dev = container_of(slist, struct comp_dev, bsource_list);
+			// 		tplg_dump_comp_elem("source", dev, slist);
+			// 	}
+			break;
+		}
+
+		platform_shared_commit(icd, sizeof(*icd));
+	}
+	trace_flush();
+	trace_point(0xBECA0003);
+}
+
 /*
  * Components, buffers and pipelines all use the same set of monotonic ID
  * numbers passed in by the host. They are stored in different lists, hence

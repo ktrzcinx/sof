@@ -227,7 +227,7 @@ int ipc_platform_send_msg(struct ipc_msg *msg);
 void ipc_send_queued_msg(void);
 
 void ipc_msg_send(struct ipc_msg *msg, void *data, bool high_priority);
-
+void topology_dump(struct ipc *ipc);
 /**
  * \brief Data provided by the platform which use ipc...page_descriptors().
  *
