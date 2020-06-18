@@ -186,6 +186,7 @@ static inline int audio_stream_set_params(struct audio_stream *buffer,
  */
 static inline uint32_t audio_stream_frame_bytes(const struct audio_stream *buf)
 {
+	assert(buf->channels);
 	return get_frame_bytes(buf->frame_fmt, buf->channels);
 }
 

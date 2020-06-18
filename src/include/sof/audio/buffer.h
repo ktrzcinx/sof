@@ -271,6 +271,7 @@ static inline int buffer_set_params(struct comp_buffer *buffer,
 {
 	int ret;
 	int i;
+	int ch = buffer->stream.channels;
 
 	if (!params) {
 		buf_err(buffer, "buffer_set_params(): !params");
@@ -285,6 +286,8 @@ static inline int buffer_set_params(struct comp_buffer *buffer,
 		buf_err(buffer, "buffer_set_params(): audio_stream_set_params failed");
 		return -EINVAL;
 	}
+	buf_err(buffer, "buffer_set_params(): buffer %d.%d channels old %d new %d",
+		buffer->pipeline_id, buffer->id, ch, buffer->stream.channels);
 
 	buffer->buffer_fmt = params->buffer_fmt;
 	for (i = 0; i < SOF_IPC_MAX_CHANNELS; i++)

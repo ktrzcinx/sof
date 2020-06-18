@@ -232,8 +232,11 @@ static void comp_update_params(uint32_t flag,
 	if (flag & BUFF_PARAMS_BUFFER_FMT)
 		params->buffer_fmt = buffer->buffer_fmt;
 
-	if (flag & BUFF_PARAMS_CHANNELS)
+	if (flag & BUFF_PARAMS_CHANNELS) {
+		tr_err(&comp_tr, "Update channel params from %d to %d for comp id %d",
+			params->channels, buffer->stream.channels, buffer->id);
 		params->channels = buffer->stream.channels;
+	}
 
 	if (flag & BUFF_PARAMS_RATE)
 		params->rate = buffer->stream.rate;
