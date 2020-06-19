@@ -164,6 +164,32 @@ void comp_update_buffer_produce(struct comp_buffer *buffer, uint32_t bytes);
 /* called by a component after consuming data from this buffer */
 void comp_update_buffer_consume(struct comp_buffer *buffer, uint32_t bytes);
 
+/**
+ * Invalidates control block of a buffer to ensure current state and params
+ * readout.
+ * @param buffer Buffer component to invalidate
+ */
+static inline void buffer_control_invalidate(struct comp_buffer *buffer)
+{
+	if (!buffer->inter_core)
+		return;
+
+	dcache_invalidate_region(buffer, sizeof(*buffer));
+}
+
+/**
+ * Writeback control block of a buffer to ensure current state and params
+ * readout.
+ * @param buffer Buffer component to writeback
+ */
+static inline void buffer_control_writeback(struct comp_buffer *buffer)
+{
+	if (!buffer->inter_core)
+		return;
+
+	dcache_writeback_region(buffer, sizeof(*buffer));
+}
+
 static inline void buffer_invalidate(struct comp_buffer *buffer, uint32_t bytes)
 {
 	if (!buffer->inter_core)
@@ -195,7 +221,7 @@ static inline void buffer_lock(struct comp_buffer *buffer, uint32_t *flags)
 	spin_lock_irq(buffer->lock, *flags);
 
 	/* invalidate in case something has changed during our wait */
-	dcache_invalidate_region(buffer, sizeof(*buffer));
+	buffer_control_invalidate(buffer);
 }
 
 /**
