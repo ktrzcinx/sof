@@ -53,7 +53,7 @@ static void usage(void)
 		APP_NAME);
 	fprintf(stdout, "%s:\t -L\t\t\tHide log location in source code\n",
 		APP_NAME);
-	fprintf(stdout, "%s:\t -f precision\t\tSet timestamp precision\n",
+	fprintf(stdout, "%s:\t -f precision\t\tSet timestamp precision or hide them\n",
 		APP_NAME);
 	fprintf(stdout, "%s:\t -d *.ldc_file \t\tDump ldc_file information\n",
 		APP_NAME);
@@ -216,10 +216,6 @@ int main(int argc, char *argv[])
 			break;
 		case 'f':
 			config.float_precision = atoi(optarg);
-			if (config.float_precision < 0) {
-				usage();
-				return -EINVAL;
-			}
 			break;
 		case 'd':
 			if (config.ldc_file) {
