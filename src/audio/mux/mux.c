@@ -298,7 +298,8 @@ static int demux_copy(struct comp_dev *dev)
 		sink = container_of(clist, struct comp_buffer, source_list);
 		buffer_lock(sink, &flags);
 		comp_info(dev, "demux_copy() sink->sink %X active: %d (buff id %d inter_core %d)", (uint32_t)sink->sink, sink->sink->state == dev->state, sink->id, sink->inter_core);
-		if (sink->sink->state == dev->state) {
+		if (sink->sink->state == dev->state &&
+		    sink->sink->pipeline->status == COMP_STATE_ACTIVE) {
 			num_sinks++;
 			i = get_stream_index(cd, sink->pipeline_id);
 			sinks[i] = sink;
@@ -391,7 +392,8 @@ static int mux_copy(struct comp_dev *dev)
 	list_for_item(clist, &dev->bsource_list) {
 		source = container_of(clist, struct comp_buffer, sink_list);
 		buffer_lock(source, &flags);
-		if (source->source->state == dev->state) {
+		if (source->source->state == dev->state &&
+		    sink->sink->pipeline->status == COMP_STATE_ACTIVE) {
 			num_sources++;
 			i = get_stream_index(cd, source->pipeline_id);
 			sources[i] = source;
