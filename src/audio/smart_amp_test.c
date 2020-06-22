@@ -315,18 +315,58 @@ static int smart_amp_params(struct comp_dev *dev,
 	return 0;
 }
 
+static int data_bits(const struct audio_stream *stream)
+{
+	switch(stream->frame_fmt) {
+		case SOF_IPC_FRAME_S16_LE:
+			return 16;
+		case SOF_IPC_FRAME_S24_4LE:
+			return 24;
+		case SOF_IPC_FRAME_S32_LE:
+			return 32;
+		case SOF_IPC_FRAME_FLOAT:
+			return 31;
+		default:
+			return -1;
+	}
+}
+
+static void smart_amp_dump(const struct comp_dev *dev)
+{
+	struct smart_amp_data *sad = comp_get_drvdata(dev);
+	struct comp_buffer *buff;
+
+	buff = sad->source_buf;
+	//buffer_control_invalidate(buff);
+	comp_err(dev, "    source_buf addr: %X channels %d rate %d fmt %d",
+		(uint32_t)buff, buff ? buff->stream.channels : -1,
+		buff ? buff->stream.rate : -1, buff ? data_bits(&buff->stream) : -1);
+	buff = sad->sink_buf;
+	//buffer_control_invalidate(buff);
+	comp_err(dev, "    sink_buf addr: %X channels %d rate %d fmt %d",
+		(uint32_t)buff, buff ? buff->stream.channels : -1,
+		buff ? buff->stream.rate : -1, buff ? data_bits(&buff->stream) : -1);
+	buff = sad->feedback_buf;
+	//buffer_control_invalidate(buff);
+	comp_err(dev, "    feedback_buf addr: %X channels %d rate %d fmt %d",
+		(uint32_t)buff, buff ? buff->stream.channels : -1,
+		buff ? buff->stream.rate : -1, buff ? data_bits(&buff->stream) : -1);
+}
+
 static int smart_amp_trigger(struct comp_dev *dev, int cmd)
 {
 	struct smart_amp_data *sad = comp_get_drvdata(dev);
 	int ret = 0;
 
-	comp_info(dev, "smart_amp_trigger(), command = %u", cmd);
+	trace_point(0xBECA0011);
+	comp_err(dev, "smart_amp_trigger(), command = %u", cmd);
 
 	ret = comp_set_state(dev, cmd);
 
 	if (ret == COMP_STATUS_STATE_ALREADY_SET)
 		ret = PPL_STATUS_PATH_STOP;
 
+	smart_amp_dump(dev);
 	switch (cmd) {
 	case COMP_TRIGGER_START:
 	case COMP_TRIGGER_RELEASE:
@@ -338,6 +378,7 @@ static int smart_amp_trigger(struct comp_dev *dev, int cmd)
 	default:
 		break;
 	}
+	trace_point(0xBECA0012);
 
 	return ret;
 }
@@ -436,8 +477,17 @@ static int smart_amp_copy(struct comp_dev *dev)
 	uint32_t sink_flags = 0;
 	uint32_t feedback_flags = 0;
 	int ret = 0;
+	static int dump = 0;
+
+	trace_point(0xBECA0021);
 
 	comp_dbg(dev, "smart_amp_copy()");
+
+	if (!dump) {
+		smart_amp_dump(dev);
+		++dump;
+	}
+
 
 	buffer_lock(sad->source_buf, &source_flags);
 	buffer_lock(sad->sink_buf, &sink_flags);
@@ -481,16 +531,16 @@ static int smart_amp_copy(struct comp_dev *dev)
 		buffer_unlock(sad->feedback_buf, feedback_flags);
 	}
 
+	buffer_lock(sad->sink_buf, &sink_flags);
+	sink_bytes = avail_frames *
+		audio_stream_frame_bytes(&sad->sink_buf->stream);
+	buffer_unlock(sad->sink_buf, sink_flags);
+
 	/* bytes calculation */
 	buffer_lock(sad->source_buf, &source_flags);
 	source_bytes = avail_frames *
 		audio_stream_frame_bytes(&sad->source_buf->stream);
 	buffer_unlock(sad->source_buf, source_flags);
-
-	buffer_lock(sad->sink_buf, &sink_flags);
-	sink_bytes = avail_frames *
-		audio_stream_frame_bytes(&sad->sink_buf->stream);
-	buffer_unlock(sad->sink_buf, sink_flags);
 
 	/* process data */
 	sad->process(dev, &sad->source_buf->stream, &sad->sink_buf->stream,
@@ -499,6 +549,8 @@ static int smart_amp_copy(struct comp_dev *dev)
 	/* source/sink buffer pointers update */
 	comp_update_buffer_consume(sad->source_buf, source_bytes);
 	comp_update_buffer_produce(sad->sink_buf, sink_bytes);
+
+	trace_point(0xBECA0022);
 
 	return ret;
 }
@@ -519,7 +571,8 @@ static int smart_amp_prepare(struct comp_dev *dev)
 	struct list_item *blist;
 	int ret;
 
-	comp_info(dev, "smart_amp_prepare()");
+	trace_point(0xBECA0001);
+	comp_err(dev, "smart_amp_prepare()");
 
 	ret = comp_set_state(dev, COMP_TRIGGER_PREPARE);
 	if (ret < 0)
@@ -542,11 +595,15 @@ static int smart_amp_prepare(struct comp_dev *dev)
 	sad->sink_buf = list_first_item(&dev->bsink_list, struct comp_buffer,
 					source_list);
 
+	comp_err(dev, "smart_amp_prepare() 3.2 FB: %X SRC: %X DST: %X", (uint32_t)sad->feedback_buf, (uint32_t)sad->source_buf, (uint32_t)sad->sink_buf);
+	comp_err(dev, "smart_amp_prepare() 3.5 sad %X", (uint32_t)sad);
+
 	sad->in_channels = sad->source_buf->stream.channels;
 	sad->out_channels = sad->sink_buf->stream.channels;
 
 	sad->feedback_buf->stream.channels = sad->config.feedback_channels;
 	sad->feedback_buf->stream.rate = sad->source_buf->stream.rate;
+	comp_err(dev, "smart_amp_prepare() 3.88");
 
 	/* TODO:
 	 * ATM feedback buffer frame_fmt is hardcoded to s32_le. It should be
@@ -554,12 +611,19 @@ static int smart_amp_prepare(struct comp_dev *dev)
 	 */
 	sad->feedback_buf->stream.frame_fmt = SOF_IPC_FRAME_S32_LE;
 	buffer_control_writeback(sad->feedback_buf);
+	comp_err(dev, "smart_amp_prepare() 4");
 
 	sad->process = get_smart_amp_process(dev);
 	if (!sad->process) {
 		comp_err(dev, "smart_amp_prepare(): get_smart_amp_process failed");
 		return -EINVAL;
 	}
+	comp_err(dev, "smart_amp_prepare() 4");
+
+	smart_amp_dump(dev);
+
+	comp_err(dev, "smart_amp_prepare() end");
+	trace_point(0xBECA0002);
 
 	return 0;
 }

@@ -285,7 +285,7 @@ static int demux_copy(struct comp_dev *dev)
 	uint32_t sinks_bytes[MUX_MAX_STREAMS] = { 0 };
 	uint32_t flags = 0;
 
-	comp_dbg(dev, "demux_copy()");
+	comp_dbg(dev, "demux_copy() addr %X", (uint32_t)dev);
 
 	if (!cd->demux) {
 		comp_err(dev, "demux_copy(): no demux processing function for component.");
@@ -297,6 +297,7 @@ static int demux_copy(struct comp_dev *dev)
 	list_for_item(clist, &dev->bsink_list) {
 		sink = container_of(clist, struct comp_buffer, source_list);
 		buffer_lock(sink, &flags);
+		comp_info(dev, "demux_copy() sink->sink %X active: %d (buff id %d inter_core %d)", (uint32_t)sink->sink, sink->sink->state == dev->state, sink->id, sink->inter_core);
 		if (sink->sink->state == dev->state) {
 			num_sinks++;
 			i = get_stream_index(cd, sink->pipeline_id);
