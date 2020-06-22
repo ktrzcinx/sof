@@ -532,7 +532,7 @@ static int smart_amp_prepare(struct comp_dev *dev)
 	list_for_item(blist, &dev->bsource_list) {
 		source_buffer = container_of(blist, struct comp_buffer,
 					     sink_list);
-
+		buffer_control_invalidate(source_buffer);
 		if (source_buffer->source->comp.type == SOF_COMP_DEMUX)
 			sad->feedback_buf = source_buffer;
 		else
@@ -553,6 +553,7 @@ static int smart_amp_prepare(struct comp_dev *dev)
 	 * removed when parameters negotiation between pipelines will prepared
 	 */
 	sad->feedback_buf->stream.frame_fmt = SOF_IPC_FRAME_S32_LE;
+	buffer_control_writeback(sad->feedback_buf);
 
 	sad->process = get_smart_amp_process(dev);
 	if (!sad->process) {
