@@ -197,6 +197,9 @@ int comp_set_state(struct comp_dev *dev, int cmd)
 		break;
 	}
 
+	if (!dev->is_shared)
+		dcache_writeback_region(dev, sizeof(*dev));
+
 	return ret;
 }
 
