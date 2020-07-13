@@ -57,7 +57,8 @@ struct hc_buf {
  * if the latter is != 0. report_pos is used to track progress since the last
  * multiple of host_period_bytes.
  *
- * host_size is the host buffer size (in bytes) specified in the IPC parameters.
+ * dma_buffer->stream.size is the host buffer size (in bytes) specified in the
+ * IPC parameters.
  */
 struct host_data {
 	/* local DMA config */
@@ -68,7 +69,6 @@ struct host_data {
 	struct comp_buffer *local_buffer;
 
 	/* host position reporting related */
-	uint32_t host_size;	/**< Host buffer size (in bytes) */
 	uint32_t report_pos;	/**< Position in current report period */
 	uint32_t local_pos;	/**< Local position in host buffer */
 	uint32_t host_period_bytes;
@@ -150,7 +150,7 @@ static void host_update_position(struct comp_dev *dev, uint32_t bytes)
 	hd->local_pos += bytes;
 
 	/* buffer overlap, hardcode host buffer size at the moment */
-	if (hd->local_pos >= hd->host_size)
+	if (hd->local_pos >= hd->dma_buffer->stream.size)
 		hd->local_pos = 0;
 
 	/* Don't send stream position if no_stream_position == 1 */
@@ -647,7 +647,6 @@ static int host_params(struct comp_dev *dev,
 	}
 
 	/* host params always installed by pipeline IPC */
-	hd->host_size = params->buffer.size;
 	hd->stream_tag = params->stream_tag;
 	hd->no_stream_position = params->no_stream_position;
 	hd->host_period_bytes = params->host_period_bytes;
