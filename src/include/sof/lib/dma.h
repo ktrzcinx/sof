@@ -222,9 +222,18 @@ struct dma_info {
 };
 
 struct audio_stream;
-typedef void (*dma_process_func)(const struct audio_stream *source,
-				 uint32_t ioffset, struct audio_stream *sink,
-				 uint32_t ooffset, uint32_t frames);
+
+/**
+ * \brief This function is called during coping data to/from DMA buffer
+ *
+ * Given bytes number is respectively source/sink bytes for copying to/from DMA
+ * buffer. Return value are number of sink/source bytes for copying to/from DMA.
+ */
+typedef int (*dma_process_func)(const struct audio_stream *source,
+				uint32_t ioffset_bytes,
+				struct audio_stream *sink,
+				uint32_t ooffset_bytes,
+				uint32_t bytes);
 
 /**
  * \brief API to initialize a platform DMA controllers.

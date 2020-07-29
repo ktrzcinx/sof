@@ -193,16 +193,13 @@ void dma_buffer_copy_from(struct comp_buffer *source, struct comp_buffer *sink,
 			  dma_process_func process, uint32_t source_bytes)
 {
 	struct audio_stream *istream = &source->stream;
-	uint32_t samples = source_bytes /
-			   audio_stream_sample_bytes(istream);
-	uint32_t sink_bytes = audio_stream_sample_bytes(&sink->stream) *
-			      samples;
+	uint32_t sink_bytes;
 
 	/* source buffer contains data copied by DMA */
 	audio_stream_invalidate(istream, source_bytes);
 
 	/* process data */
-	process(istream, 0, &sink->stream, 0, samples);
+	sink_bytes = process(istream, 0, &sink->stream, 0, source_bytes);
 
 	buffer_writeback(sink, sink_bytes);
 
@@ -218,15 +215,12 @@ void dma_buffer_copy_to(struct comp_buffer *source, struct comp_buffer *sink,
 			dma_process_func process, uint32_t sink_bytes)
 {
 	struct audio_stream *ostream = &sink->stream;
-	uint32_t samples = sink_bytes /
-			   audio_stream_sample_bytes(ostream);
-	uint32_t source_bytes = audio_stream_sample_bytes(&source->stream) *
-			      samples;
 
+	/* tutaj jest slabo */
 	buffer_invalidate(source, source_bytes);
 
 	/* process data */
-	process(&source->stream, 0, ostream, 0, samples);
+	source_bytes = process(&source->stream, 0, ostream, 0, sink_bytes);
 
 	/* sink buffer contains data meant to copied to DMA */
 	audio_stream_writeback(ostream, sink_bytes);
