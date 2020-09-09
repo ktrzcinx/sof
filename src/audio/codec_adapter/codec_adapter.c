@@ -296,22 +296,19 @@ static void codec_adapter_copy_from_lib_to_sink(void *source, struct audio_strea
 static int codec_adapter_copy(struct comp_dev *dev)
 {
 	int ret = 0;
-	uint32_t copy_bytes, bytes_to_process, processed = 0;
+	uint32_t bytes_to_process, processed = 0;
 	struct comp_data *cd = comp_get_drvdata(dev);
 	struct codec_data *codec = &cd->codec;
 	struct comp_buffer *source = cd->ca_source;
 	struct comp_buffer *sink = cd->ca_sink;
-        uint32_t lib_buff_size = codec->cpd.in_buff_size;
+	uint32_t lib_buff_size = codec->cpd.in_buff_size;
 	struct comp_copy_limits c;
 
 	comp_get_copy_limits_with_lock(source, sink, &c);
-	bytes_to_process = c.frames * audio_stream_frame_bytes(&source->stream);
+	bytes_to_process = c.source_bytes;
 
-	bytes_to_process = MIN(sink->stream.free, source->stream.avail);
-	copy_bytes = MIN(sink->stream.free, source->stream.avail);
-
-	comp_dbg(dev, "codec_adapter_copy() start lib_buff_size: %d, copy_bytes: %d",
-		 lib_buff_size, copy_bytes);
+	comp_dbg(dev, "codec_adapter_copy() start lib_buff_size: %d, bytes_to_process: %d, MIN(sink %d, source %d)",
+		 lib_buff_size, bytes_to_process, audio_stream_get_free_bytes(&sink->stream), audio_stream_get_avail_bytes(&source->stream));
 
 	buffer_invalidate(source, MIN(lib_buff_size, bytes_to_process));
 	while (bytes_to_process) {
@@ -324,10 +321,10 @@ static int codec_adapter_copy(struct comp_dev *dev)
 		/* Fill lib buffer completely. NOTE! If you don't fill whole buffer
 		 * the lib won't process it.
 		 */
-		codec_adapter_copy_to_lib(&source->stream,
-					  codec->cpd.in_buff,
-					  lib_buff_size);
 		codec->cpd.avail = lib_buff_size;
+		buffer_invalidate(source, lib_buff_size);
+		codec_adapter_copy_to_lib(&source->stream, codec->cpd.in_buff, lib_buff_size);
+
 		ret = codec_process(dev);
 		if (ret) {
 			comp_err(dev, "codec_adapter_copy() error %x: lib processing failed",
@@ -340,8 +337,12 @@ static int codec_adapter_copy(struct comp_dev *dev)
 			break;
 		}
 
-		codec_adapter_copy_from_lib_to_sink(codec->cpd.out_buff,
-						    &sink->stream, codec->cpd.produced);
+		codec_adapter_copy_from_lib_to_sink(codec->cpd.out_buff, &sink->stream,
+						    codec->cpd.produced);
+		buffer_writeback(sink, codec->cpd.produced);
+
+		comp_update_buffer_consume(source, lib_buff_size);
+		comp_update_buffer_produce(sink, codec->cpd.produced);
 
 		bytes_to_process -= codec->cpd.produced;
 		processed += codec->cpd.produced;
@@ -354,9 +355,6 @@ static int codec_adapter_copy(struct comp_dev *dev)
 		comp_dbg(dev, "codec_adapter_copy: codec processed %d bytes", processed);
 	}
 
-	buffer_writeback(sink, processed);
-	comp_update_buffer_produce(sink, processed);
-	comp_update_buffer_consume(source, processed);
 end:
 	comp_dbg(dev, "codec_adapter_copy() end processed: %d", processed);
 	return ret;
