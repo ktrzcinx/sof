@@ -153,16 +153,16 @@ static int codec_adapter_prepare(struct comp_dev *dev)
 	/* Init sink & source buffers */
 	cd->ca_sink = list_first_item(&dev->bsink_list, struct comp_buffer,
 				      source_list);
-        cd->ca_source = list_first_item(&dev->bsource_list, struct comp_buffer,
-                                        sink_list);
+	cd->ca_source = list_first_item(&dev->bsource_list, struct comp_buffer,
+					sink_list);
 
-        if (!cd->ca_source) {
-                comp_err(dev, "codec_adapter_prepare() erro: source buffer not found");
-                return -EINVAL;
-        } else if (!cd->ca_sink) {
-                comp_err(dev, "codec_adapter_prepare() erro: sink buffer not found");
-                return -EINVAL;
-        }
+	if (!cd->ca_source) {
+		comp_err(dev, "codec_adapter_prepare() erro: source buffer not found");
+		return -EINVAL;
+	} else if (!cd->ca_sink) {
+		comp_err(dev, "codec_adapter_prepare() erro: sink buffer not found");
+		return -EINVAL;
+	}
 
 	/* Are we already prepared? */
 	ret = comp_set_state(dev, COMP_TRIGGER_PREPARE);
@@ -187,7 +187,7 @@ static int codec_adapter_prepare(struct comp_dev *dev)
 	}
 
 	comp_info(dev, "codec_adapter_prepare() done");
-        cd->state = PP_STATE_PREPARED;
+	cd->state = PP_STATE_PREPARED;
 
 	return 0;
 }
@@ -307,17 +307,17 @@ static int codec_adapter_copy(struct comp_dev *dev)
 	comp_get_copy_limits_with_lock(source, sink, &c);
 	bytes_to_process = c.frames * audio_stream_frame_bytes(&source->stream);
 
-        bytes_to_process = MIN(sink->stream.free, source->stream.avail);
+	bytes_to_process = MIN(sink->stream.free, source->stream.avail);
 	copy_bytes = MIN(sink->stream.free, source->stream.avail);
 
-        comp_dbg(dev, "codec_adapter_copy() start lib_buff_size: %d, copy_bytes: %d",
-        	  lib_buff_size, copy_bytes);
+	comp_dbg(dev, "codec_adapter_copy() start lib_buff_size: %d, copy_bytes: %d",
+		 lib_buff_size, copy_bytes);
 
 	buffer_invalidate(source, MIN(lib_buff_size, bytes_to_process));
 	while (bytes_to_process) {
 		if (bytes_to_process < lib_buff_size) {
 			comp_dbg(dev, "codec_adapter_copy(): processed %d in this call %d bytes left for next period",
-			        processed, bytes_to_process);
+				processed, bytes_to_process);
 			break;
 		}
 
@@ -335,13 +335,13 @@ static int codec_adapter_copy(struct comp_dev *dev)
 			break;
 		} else if (codec->cpd.produced == 0) {
 			/* skipping as lib has not produced anything */
-                        comp_dbg(dev, "codec_adapter_copy() error %x: lib hasn't processed anything",
-                                 ret);
+			comp_dbg(dev, "codec_adapter_copy() error %x: lib hasn't processed anything",
+				 ret);
 			break;
 		}
 
-                codec_adapter_copy_from_lib_to_sink(codec->cpd.out_buff,
-                				    &sink->stream, codec->cpd.produced);
+		codec_adapter_copy_from_lib_to_sink(codec->cpd.out_buff,
+						    &sink->stream, codec->cpd.produced);
 
 		bytes_to_process -= codec->cpd.produced;
 		processed += codec->cpd.produced;
@@ -358,7 +358,7 @@ static int codec_adapter_copy(struct comp_dev *dev)
 	comp_update_buffer_produce(sink, processed);
 	comp_update_buffer_consume(source, processed);
 end:
-        comp_dbg(dev, "codec_adapter_copy() end processed: %d", processed);
+	comp_dbg(dev, "codec_adapter_copy() end processed: %d", processed);
 	return ret;
 }
 
@@ -382,18 +382,18 @@ static int codec_adapter_trigger(struct comp_dev *dev, int cmd)
 		     cmd);
 
 	//TODO: ask lib if pp parameters has been aplied and if not log it!
-        //likely here change detect COMP_TRIGGER_START cmd and change state to PP_STATE_RUN
+	//likely here change detect COMP_TRIGGER_START cmd and change state to PP_STATE_RUN
 	return comp_set_state(dev, cmd);
 }
 
 static int codec_adapter_reset(struct comp_dev *dev)
 {
-        struct comp_data *cd = comp_get_drvdata(dev);
+	struct comp_data *cd = comp_get_drvdata(dev);
 
 	comp_cl_info(&comp_codec_adapter, "codec_adapter_reset(): resetting");
 
-        cd->state = PP_STATE_CREATED;
-        //TODO: reset codec params
+	cd->state = PP_STATE_CREATED;
+	//TODO: reset codec params
 
 	return comp_set_state(dev, COMP_TRIGGER_RESET);
 }
@@ -405,13 +405,13 @@ static int ca_set_params(struct comp_dev *dev, struct sof_ipc_ctrl_data *cdata,
 	char *dst, *src;
 	static uint32_t size;
 	uint32_t offset;
-        struct comp_data *cd = comp_get_drvdata(dev);
-        int *debug = (void *)0x9e008000;
-        static int i;
+	struct comp_data *cd = comp_get_drvdata(dev);
+	int *debug = (void *)0x9e008000;
+	static int i;
 
-        *debug = 0xFEED;
-        *(debug+i++) = type;
-        *(debug+i++) = cdata->num_elems;
+	*debug = 0xFEED;
+	*(debug+i++) = type;
+	*(debug+i++) = cdata->num_elems;
 	/* Stage 1 load whole config locally */
 	/* Check that there is no work-in-progress previous request */
 	if (cd->runtime_params && cdata->msg_index == 0) {
@@ -463,7 +463,7 @@ static int ca_set_params(struct comp_dev *dev, struct sof_ipc_ctrl_data *cdata,
 			comp_err(dev, "ca_set_runtime_params() error %x: lib params load failed",
 				 ret);
 			goto end;
-        	}
+		}
 		if (cd->state >= PP_STATE_PREPARED && type == CODEC_CFG_RUNTIME) {
 			/* Post processing is already prepared so we can apply runtime
 			 * config right away.
@@ -510,13 +510,13 @@ static int ca_set_binary_data(struct comp_dev *dev,
 }
 
 static int codec_adapter_ctrl_set_data(struct comp_dev *dev,
-                                      struct sof_ipc_ctrl_data *cdata) {
+				      struct sof_ipc_ctrl_data *cdata) {
 	int ret;
 
 	struct comp_data *cd = comp_get_drvdata(dev);
 
-        comp_info(dev, "codec_adapter_ctrl_set_data() start, state %d, cmd %d",
-        	  cd->state, cdata->cmd);
+	comp_info(dev, "codec_adapter_ctrl_set_data() start, state %d, cmd %d",
+		  cd->state, cdata->cmd);
 
 	/* Check version from ABI header */
 	if (SOF_ABI_VERSION_INCOMPATIBLE(SOF_ABI_VERSION, cdata->data->abi)) {
