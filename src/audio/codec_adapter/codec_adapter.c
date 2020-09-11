@@ -212,85 +212,34 @@ end:
 	return ret;
 }
 
-static void codec_adapter_copy_to_lib(const struct audio_stream *source,
-			      void *lib_buff, size_t size)
+void codec_adapter_copy_to_lib(const struct audio_stream *source,
+			      void *lib_buff, size_t bytes);
+void codec_adapter_copy_to_lib(const struct audio_stream *source,
+			      void *lib_buff, size_t bytes)
 {
-	void *src;
-	void *dst = lib_buff;
-	size_t i;
-	size_t j = 0;
-	size_t channel;
-	size_t channels = source->channels;
-	size_t sample_width = source->frame_fmt == SOF_IPC_FRAME_S16_LE ?
-			  16 : 32;
-	size_t frames = size / (sample_width / 8 * channels);
+	uint32_t head_size= MIN(bytes, audio_stream_bytes_without_wrap(source, source->r_ptr));
+	uint32_t tail_size = bytes - head_size;
 
-	for (i = 0; i < frames; i++) {
-		for (channel = 0; channel < channels; channel++) {
-			switch (sample_width) {
-			case 16:
-				src = audio_stream_read_frag_s16(source, j);
-				*((int16_t *)dst) = *((int16_t *)src);
-				dst = ((int16_t *)dst) + 1;
-				break;
-#if CONFIG_FORMAT_S24LE || CONFIG_FORMAT_S32LE
-			case 24:
-			case 32:
-				src = audio_stream_read_frag_s32(source, j);
-				*((int32_t *)dst) = *((int32_t *)src);
-				dst = ((int32_t *)dst) + 1;
-				break;
-#endif /* CONFIG_FORMAT_S24LE || CONFIG_FORMAT_S32LE*/
-			default:
-				comp_cl_info(&comp_codec_adapter, "codec_adapter_copy_to_lib(): An attempt to copy not supported format!");
-				return;
-			}
-			j++;
-		}
-	}
-
+	memcpy(lib_buff, source->r_ptr, head_size);
+	if (tail_size)
+		memcpy((uint8_t *)lib_buff + head_size,
+			audio_stream_wrap(source, (uint8_t *)source->r_ptr + head_size),
+			tail_size);
 }
 
-static void codec_adapter_copy_from_lib_to_sink(void *source, struct audio_stream *sink,
-			      size_t size)
+void codec_adapter_copy_from_lib_to_sink(void *source, struct audio_stream *sink,
+			      size_t bytes);
+void codec_adapter_copy_from_lib_to_sink(void *source, struct audio_stream *sink,
+			      size_t bytes)
 {
-	void *dst;
-	void *src = source;
-	size_t i;
-	size_t j = 0;
-	size_t channel;
-	size_t sample_width = sink->frame_fmt == SOF_IPC_FRAME_S16_LE ?
-			  16 : 32;
-	size_t channels = sink->channels;
-	size_t frames = size / (sample_width / 8 * channels);
+	uint32_t head_size= MIN(bytes, audio_stream_bytes_without_wrap(sink, sink->w_ptr));
+	uint32_t tail_size = bytes - head_size;
 
-
-	for (i = 0; i < frames; i++) {
-		for (channel = 0; channel < channels; channel++) {
-			switch (sample_width) {
-#if CONFIG_FORMAT_S16LE
-			case 16:
-				dst = audio_stream_write_frag_s16(sink, j);
-				*((int16_t *)dst) = *((int16_t *)src);
-				src = ((int16_t *)src) + 1;
-				break;
-#endif /* CONFIG_FORMAT_S16LE */
-#if CONFIG_FORMAT_S24LE || CONFIG_FORMAT_S32LE
-			case 24:
-			case 32:
-				dst = audio_stream_write_frag_s32(sink, j);
-				*((int32_t *)dst) = *((int32_t *)src);
-				src = ((int32_t *)src) + 1;
-				break;
-#endif /* CONFIG_FORMAT_S24LE || CONFIG_FORMAT_S32LE */
-			default:
-				comp_cl_info(&comp_codec_adapter, "codec_adapter_copy_to_lib(): An attempt to copy not supported format!");
-				return;
-			}
-			j++;
-		}
-	}
-
+	memcpy(sink->w_ptr,source, head_size);
+	if (tail_size)
+		memcpy(audio_stream_wrap(sink, (uint8_t *)sink->w_ptr + head_size),
+			(uint8_t *)source + head_size,
+			tail_size);
 }
 
 static int codec_adapter_copy(struct comp_dev *dev)
