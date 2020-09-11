@@ -340,7 +340,8 @@ int cadence_codec_process(struct comp_dev *dev)
 		goto err;
 	}
 
-	comp_dbg(dev, "cadence_codec_process() done");
+	comp_dbg(dev, "cadence_codec_process() done, #%d avail %d produced %d cpd %p",
+		 cpu_get_id(), codec->cpd.avail, codec->cpd.produced, (uint32_t)&codec->cpd);
 
 	return 0;
 err:

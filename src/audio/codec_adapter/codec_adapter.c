@@ -40,7 +40,7 @@ static const struct comp_driver comp_codec_adapter;
 DECLARE_SOF_RT_UUID("codec_adapter", ca_uuid, 0xd8218443, 0x5ff3, 0x4a4c,
 		    0xb3, 0x88, 0x6c, 0xfe, 0x07, 0xb9, 0x56, 0xaa);
 
-DECLARE_TR_CTX(ca_tr, SOF_UUID(ca_uuid), LOG_LEVEL_INFO);
+DECLARE_TR_CTX(ca_tr, SOF_UUID(ca_uuid), LOG_LEVEL_VERBOSE);
 
 static struct comp_dev *codec_adapter_new(const struct comp_driver *drv,
 					      struct sof_ipc_comp *comp)
@@ -274,6 +274,15 @@ static int codec_adapter_copy(struct comp_dev *dev)
 		buffer_invalidate(source, lib_buff_size);
 		codec_adapter_copy_to_lib(&source->stream, codec->cpd.in_buff, lib_buff_size);
 
+		comp_info(dev, "source inter_core: %d sink inter_core: %d (buff %x==%x)", source->inter_core, sink->inter_core,
+			  *((uint16_t*)audio_stream_read_frag_s16(&source->stream, 0)), *((uint16_t*)codec->cpd.in_buff));
+
+		if (*((uint16_t*)audio_stream_read_frag_s16(&source->stream, 0)) != *((uint16_t*)codec->cpd.in_buff))
+			comp_warn(dev, "source[0] != codec_in[0]");
+
+		if (*((uint16_t*)audio_stream_read_frag_s16(&source->stream, lib_buff_size / 2)) != *((uint16_t*)codec->cpd.in_buff + lib_buff_size / 2))
+			comp_warn(dev, "source[-1] != codec_in[-1]");
+
 		ret = codec_process(dev);
 		if (ret) {
 			comp_err(dev, "codec_adapter_copy() error %x: lib processing failed",
@@ -290,6 +299,12 @@ static int codec_adapter_copy(struct comp_dev *dev)
 						    codec->cpd.produced);
 		buffer_writeback(sink, codec->cpd.produced);
 
+		if (*((uint16_t*)audio_stream_read_frag_s16(&sink->stream, 0)) != *((uint16_t*)codec->cpd.out_buff))
+			comp_warn(dev, "sink[0] != codec_out[0]");
+
+		if (*((uint16_t*)audio_stream_read_frag_s16(&sink->stream, lib_buff_size / 2)) != *((uint16_t*)codec->cpd.out_buff + lib_buff_size / 2))
+			comp_warn(dev, "sink[-1] != codec_out[-1]");
+	
 		comp_update_buffer_consume(source, lib_buff_size);
 		comp_update_buffer_produce(sink, codec->cpd.produced);
 
