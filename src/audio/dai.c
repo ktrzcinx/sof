@@ -716,6 +716,14 @@ static int dai_copy(struct comp_dev *dev)
 	if (!copy_bytes && dd->start_position != dev->position)
 		return 0;
 
+	/* Check possibility of glitch occurence */
+	if (dev->direction == SOF_IPC_STREAM_PLAYBACK && free_bytes < dd->period_bytes)
+		comp_warn(dev, "dai_copy(): Free bytes %d < period bytes %d",
+			  free_bytes, dd->period_bytes);
+	else if (dev->direction == SOF_IPC_STREAM_CAPTURE && avail_bytes < dd->period_bytes)
+		comp_warn(dev, "dai_copy(): Avail bytes %d < period bytes %d",
+			  avail_bytes, dd->period_bytes);
+
 	ret = dma_copy(dd->chan, copy_bytes, 0);
 	if (ret < 0) {
 		dai_report_xrun(dev, copy_bytes);
