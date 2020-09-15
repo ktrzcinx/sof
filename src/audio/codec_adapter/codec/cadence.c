@@ -319,9 +319,9 @@ int cadence_codec_process(struct comp_dev *dev)
 
 	comp_dbg(dev, "cadence_codec_process() start");
 
-	memcpy(codec->cpd.out_buff, codec->cpd.in_buff, codec->cpd.avail);
-	codec->cpd.produced = codec->cpd.avail;
-	return 0;
+	// memcpy(codec->cpd.out_buff, codec->cpd.in_buff, codec->cpd.avail);
+	// codec->cpd.produced = codec->cpd.avail;
+	// return 0;
 
 	API_CALL(cd, XA_API_CMD_SET_INPUT_BYTES, 0, &codec->cpd.avail, ret);
 	if (ret != LIB_NO_ERROR) {

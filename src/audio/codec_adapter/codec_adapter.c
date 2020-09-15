@@ -40,7 +40,7 @@ static const struct comp_driver comp_codec_adapter;
 DECLARE_SOF_RT_UUID("codec_adapter", ca_uuid, 0xd8218443, 0x5ff3, 0x4a4c,
 		    0xb3, 0x88, 0x6c, 0xfe, 0x07, 0xb9, 0x56, 0xaa);
 
-DECLARE_TR_CTX(ca_tr, SOF_UUID(ca_uuid), LOG_LEVEL_VERBOSE);
+DECLARE_TR_CTX(ca_tr, SOF_UUID(ca_uuid), LOG_LEVEL_ERROR);
 
 static struct comp_dev *codec_adapter_new(const struct comp_driver *drv,
 					      struct sof_ipc_comp *comp)
@@ -256,7 +256,7 @@ static int codec_adapter_copy(struct comp_dev *dev)
 	comp_get_copy_limits_with_lock(source, sink, &c);
 	bytes_to_process = c.source_bytes;
 
-	comp_dbg(dev, "codec_adapter_copy() start lib_buff_size: %d, bytes_to_process: %d, MIN(sink %d, source %d)",
+	comp_err(dev, "codec_adapter_copy() start lib_buff_size: %d, bytes_to_process: %d, MIN(sink %d, source %d)",
 		 lib_buff_size, bytes_to_process, audio_stream_get_free_bytes(&sink->stream), audio_stream_get_avail_bytes(&source->stream));
 
 	buffer_invalidate(source, MIN(lib_buff_size, bytes_to_process));
@@ -320,7 +320,7 @@ static int codec_adapter_copy(struct comp_dev *dev)
 	}
 
 end:
-	comp_dbg(dev, "codec_adapter_copy() end processed: %d", processed);
+	comp_err(dev, "codec_adapter_copy() end processed: %d", processed);
 	return ret;
 }
 
