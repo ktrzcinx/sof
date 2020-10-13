@@ -203,7 +203,7 @@ static inline int comp_copy(struct comp_dev *dev)
 	if (cpu_is_me(dev->comp.core)) {
 		perf_cnt_init(&dev->pcd);
 		ret = dev->drv->ops.copy(dev);
-		perf_cnt_stamp(&dev->pcd, comp_perf_info, dev);
+		// perf_cnt_stamp(&dev->pcd, comp_perf_info, dev);
 	}
 	comp_shared_commit(dev);
 

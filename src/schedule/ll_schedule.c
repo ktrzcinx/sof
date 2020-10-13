@@ -36,7 +36,7 @@
 DECLARE_SOF_UUID("ll-schedule", ll_sched_uuid, 0x4f9c3ec7, 0x7b55, 0x400c,
 		 0x86, 0xb3, 0x50, 0x2b, 0x44, 0x20, 0xe6, 0x25);
 
-DECLARE_TR_CTX(ll_tr, SOF_UUID(ll_sched_uuid), LOG_LEVEL_INFO);
+DECLARE_TR_CTX(ll_tr, SOF_UUID(ll_sched_uuid), LOG_LEVEL_ERROR);
 
 /* one instance of data allocated per core */
 struct ll_schedule_data {
