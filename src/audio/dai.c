@@ -114,7 +114,9 @@ static void dai_dma_cb(void *arg, enum notify_id type, void *data)
 	void *buffer_ptr;
 	int ret;
 
-	comp_dbg(dev, "dai_dma_cb()");
+	if (dev->direction == SOF_IPC_STREAM_PLAYBACK)
+		comp_info(dev, "dai_dma_cb() dir %d bytes %d",// from 0x%x to 0x%x",
+			  dev->direction, bytes);//, dev->position, bytes + dev->position);
 
 	next->status = DMA_CB_STATUS_RELOAD;
 
@@ -803,6 +805,7 @@ static int dai_copy(struct comp_dev *dev)
 	uint32_t samples;
 	int ret = 0;
 	uint32_t flags = 0;
+	int32_t value;
 
 	comp_dbg(dev, "dai_copy()");
 
@@ -835,9 +838,16 @@ static int dai_copy(struct comp_dev *dev)
 
 	buffer_unlock(buf, flags);
 
-	comp_dbg(dev, "dai_copy(), dir: %d copy_bytes= 0x%x, frames= %d",
+	if (get_sample_bytes(dma_fmt) == 2)
+		value = *((int16_t *)audio_stream_read_frag_s16(&dd->local_buffer->stream, 0));
+	else
+		value = *((int32_t *)audio_stream_read_frag_s32(&dd->local_buffer->stream, 0));
+
+	if (dev->direction == SOF_IPC_STREAM_PLAYBACK)
+	comp_info(dev, "dai_copy(), dir: %d copy_bytes= 0x%x, frames= %d, first sample value %d",
 		 dev->direction, copy_bytes,
-		 samples / buf->stream.channels);
+		 samples / buf->stream.channels,
+		 value);
 
 	/* Check possibility of glitch occurrence */
 	if (dev->direction == SOF_IPC_STREAM_PLAYBACK &&
