@@ -772,6 +772,18 @@ static void ssp_pause(struct dai *dai, int direction)
 	ssp->state[direction] = COMP_STATE_PAUSED;
 }
 
+static void ssp_release(struct dai *dai, int direction)
+{
+	struct ssp_pdata *ssp = dai_get_drvdata(dai);
+
+	if (direction == SOF_IPC_STREAM_CAPTURE)
+		dai_info(dai, "ssp_release(), RX");
+	else
+		dai_info(dai, "ssp_release(), TX");
+
+	ssp->state[direction] = COMP_STATE_ACTIVE;
+}
+
 static int ssp_trigger(struct dai *dai, int cmd, int direction)
 {
 	struct ssp_pdata *ssp = dai_get_drvdata(dai);
@@ -787,7 +799,7 @@ static int ssp_trigger(struct dai *dai, int cmd, int direction)
 	case COMP_TRIGGER_RELEASE:
 		if (ssp->state[direction] == COMP_STATE_PAUSED ||
 		    ssp->state[direction] == COMP_STATE_PREPARE)
-			ssp_start(dai, direction);
+			ssp_release(dai, direction);
 		break;
 	case COMP_TRIGGER_STOP:
 		ssp_stop(dai, direction);

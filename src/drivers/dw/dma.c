@@ -343,8 +343,8 @@ static int dw_dma_release(struct dma_chan_data *channel)
 	struct dw_dma_chan_data *dw_chan = dma_chan_get_data(channel);
 	uint32_t flags;
 
-	tr_info(&dwdma_tr, "dw_dma_release(): dma %d channel %d release",
-		channel->dma->plat_data.id, channel->index);
+	tr_info(&dwdma_tr, "dw_dma_release(): dma %d channel %d release, LLP %p",
+		channel->dma->plat_data.id, channel->index, dw_chan->lli_current->llp);
 
 	irq_local_disable(flags);
 
@@ -365,8 +365,8 @@ static int dw_dma_pause(struct dma_chan_data *channel)
 	struct dma *dma = channel->dma;
 	uint32_t flags;
 
-	tr_info(&dwdma_tr, "dw_dma_pause(): dma %d channel %d pause",
-		channel->dma->plat_data.id, channel->index);
+	tr_info(&dwdma_tr, "dw_dma_pause(): dma %d channel %d pause, LLI %p",
+		channel->dma->plat_data.id, channel->index, dw_chan->lli_current);
 
 	irq_local_disable(flags);
 
