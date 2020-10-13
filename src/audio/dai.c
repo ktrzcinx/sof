@@ -633,6 +633,7 @@ static int dai_comp_trigger_internal(struct comp_dev *dev, int cmd)
 {
 	struct dai_data *dd = comp_get_drvdata(dev);
 	int ret;
+	static int cnt;
 
 	comp_dbg(dev, "dai_comp_trigger_internal(), command = %u", cmd);
 
@@ -661,6 +662,7 @@ static int dai_comp_trigger_internal(struct comp_dev *dev, int cmd)
 		dai_update_start_position(dev);
 		break;
 	case COMP_TRIGGER_RELEASE:
+		comp_info(dev, "dai_comp_trigger_internal(), RELEASE %d", ++cnt);
 		/* before release, we clear the buffer data to 0s,
 		 * then there is no history data sent out after release.
 		 * this is only supported at capture mode.
@@ -697,7 +699,7 @@ static int dai_comp_trigger_internal(struct comp_dev *dev, int cmd)
 		dai_trigger(dd->dai, cmd, dev->direction);
 		break;
 	case COMP_TRIGGER_PAUSE:
-		comp_dbg(dev, "dai_comp_trigger_internal(), PAUSE");
+		comp_info(dev, "dai_comp_trigger_internal(), PAUSE %d", ++cnt);
 		ret = dma_pause(dd->chan);
 		dai_trigger(dd->dai, cmd, dev->direction);
 	default:

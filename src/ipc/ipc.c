@@ -542,32 +542,47 @@ int ipc_pipeline_complete(struct ipc *ipc, uint32_t comp_id)
 	if (!ipc_pipe)
 		return -EINVAL;
 
+	tr_err(&ipc_tr, "ipc: ipc_pipeline_complete core %d, pipe_core %d",
+	       cpu_get_id(), ipc_pipe->core);
+
+	trace_point(0xAA02);
 	/* check core */
 	if (!cpu_is_me(ipc_pipe->core))
 		return ipc_process_on_core(ipc_pipe->core);
 
+	trace_point(0xAA03);
 	pipeline_id = ipc_pipe->pipeline->ipc_pipe.pipeline_id;
 
-	tr_dbg(&ipc_tr, "ipc: pipe %d -> complete on comp %d", pipeline_id,
-	       comp_id);
+	tr_err(&ipc_tr, "ipc: ipc_pipeline_complete find source and sink");
 
+	trace_point(0xAA04);
 	/* get pipeline source component */
 	ipc_ppl_source = ipc_get_ppl_src_comp(ipc, pipeline_id);
 	if (!ipc_ppl_source)
 		return -EINVAL;
 
+	tr_err(&ipc_tr, "ipc: ipc_pipeline_complete find source %p", ipc_ppl_source);
+
+	trace_point(0xAA05);
 	/* get pipeline sink component */
 	ipc_ppl_sink = ipc_get_ppl_sink_comp(ipc, pipeline_id);
 	if (!ipc_ppl_sink)
 		return -EINVAL;
 
+	tr_err(&ipc_tr, "ipc: ipc_pipeline_complete find wink %p", ipc_ppl_sink);
+
+	tr_err(&ipc_tr, "ipc: ipc_pipeline_complete walk");
+	trace_point(0xAA06);
 	ret = pipeline_complete(ipc_pipe->pipeline, ipc_ppl_source->cd,
 				ipc_ppl_sink->cd);
 
+	trace_point(0xAA07);
 	platform_shared_commit(ipc_pipe, sizeof(*ipc_pipe));
 	platform_shared_commit(ipc_ppl_source, sizeof(*ipc_ppl_source));
 	platform_shared_commit(ipc_ppl_sink, sizeof(*ipc_ppl_sink));
 
+	trace_point(0xAA08);
+	tr_err(&ipc_tr, "ipc: ipc_pipeline_complete end");
 	return ret;
 }
 
