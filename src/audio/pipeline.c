@@ -175,16 +175,20 @@ static int pipeline_for_each_comp(struct comp_dev *current, struct comp_buffer *
 				  struct pipeline_walk_context *ctx, int dir,
 				  int max_recursion_depth)
 {
-	struct list_item *buffer_list = comp_buffer_list(current, dir);
+	struct list_item *buffer_list;
 	struct list_item *clist;
 	struct comp_buffer *buffer;
 	struct comp_dev *buffer_comp;
 	uint32_t flags;
 	int err;
 
+	comp_invalidate(current);
+	buffer_list = comp_buffer_list(current, dir);
+
 	/* call comp_func on current component entry */
 	if (ctx->comp_func && !ctx->call_comp_func_on_exit) {
 		err = ctx->comp_func(current, calling_buf, ctx, dir);
+		comp_writeback(current);
 		if (err < 0 || err == PPL_STATUS_PATH_STOP)
 			return err;
 	}
@@ -230,6 +234,7 @@ static int pipeline_for_each_comp(struct comp_dev *current, struct comp_buffer *
 	/* call comp_func on current component exit */
 	if (ctx->comp_func && ctx->call_comp_func_on_exit) {
 		err = ctx->comp_func(current, calling_buf, ctx, dir);
+		comp_writeback(current);
 		if (err < 0 || err == PPL_STATUS_PATH_STOP)
 			return err;
 	}
