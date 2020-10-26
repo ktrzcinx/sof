@@ -85,7 +85,7 @@ static inline int comp_params(struct comp_dev *dev,
 {
 	int ret = 0;
 
-	if (dev->is_shared && !cpu_is_me(dev->comp.core)) {
+	if (!cpu_is_me(dev->comp.core)) {
 		ret = comp_params_remote(dev, params);
 	} else {
 		if (dev->drv->ops.params) {
@@ -161,7 +161,7 @@ static inline int comp_trigger(struct comp_dev *dev, int cmd)
 
 	assert(dev->drv->ops.trigger);
 
-	ret = (dev->is_shared && !cpu_is_me(dev->comp.core)) ?
+	ret = (!cpu_is_me(dev->comp.core)) ?
 		comp_trigger_remote(dev, cmd) : dev->drv->ops.trigger(dev, cmd);
 
 	comp_shared_commit(dev);
@@ -184,7 +184,7 @@ static inline int comp_prepare(struct comp_dev *dev)
 	int ret = 0;
 
 	if (dev->drv->ops.prepare)
-		ret = (dev->is_shared && !cpu_is_me(dev->comp.core)) ?
+		ret = (!cpu_is_me(dev->comp.core)) ?
 			comp_prepare_remote(dev) : dev->drv->ops.prepare(dev);
 
 	comp_shared_commit(dev);
@@ -243,7 +243,7 @@ static inline int comp_reset(struct comp_dev *dev)
 	int ret = 0;
 
 	if (dev->drv->ops.reset)
-		ret = (dev->is_shared && !cpu_is_me(dev->comp.core)) ?
+		ret = (!cpu_is_me(dev->comp.core)) ?
 			comp_reset_remote(dev) : dev->drv->ops.reset(dev);
 
 	comp_shared_commit(dev);
