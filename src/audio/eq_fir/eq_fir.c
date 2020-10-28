@@ -550,12 +550,15 @@ static int eq_fir_prepare(struct comp_dev *dev)
 	struct comp_buffer *sinkb;
 	uint32_t sink_period_bytes;
 	int ret;
+	uint32_t flags;
 
 	comp_info(dev, "eq_fir_prepare()");
 
 	ret = comp_set_state(dev, COMP_TRIGGER_PREPARE);
 	if (ret < 0)
 		return ret;
+
+	comp_err(dev, "eq_fir_prepare() set state");
 
 	if (ret == COMP_STATUS_STATE_ALREADY_SET)
 		return PPL_STATUS_PATH_STOP;
@@ -566,6 +569,11 @@ static int eq_fir_prepare(struct comp_dev *dev)
 	sinkb = list_first_item(&dev->bsink_list,
 				struct comp_buffer, source_list);
 
+	comp_err(dev, "eq_fir_prepare() sourceb %p sinkb %p", sourceb, sinkb);
+	buffer_lock(sourceb, &flags);
+	buffer_unlock(sourceb, flags);
+	buffer_lock(sinkb, &flags);
+	buffer_unlock(sinkb, flags);
 	/* get source data format */
 	cd->source_format = sourceb->stream.frame_fmt;
 
@@ -573,6 +581,8 @@ static int eq_fir_prepare(struct comp_dev *dev)
 	cd->sink_format = sinkb->stream.frame_fmt;
 	sink_period_bytes = audio_stream_period_bytes(&sinkb->stream,
 						      dev->frames);
+
+	comp_err(dev, "eq_fir_prepare() period bytes %d", sink_period_bytes);
 
 	if (sinkb->stream.size < config->periods_sink * sink_period_bytes) {
 		comp_err(dev, "eq_fir_prepare(): sink buffer size %d is insufficient < %d * %d",
@@ -582,6 +592,8 @@ static int eq_fir_prepare(struct comp_dev *dev)
 	}
 
 	cd->config = comp_get_data_blob(cd->model_handler, NULL, NULL);
+
+	comp_err(dev, "eq_fir_prepare() blob %p", cd->config);
 
 	if (cd->config) {
 		ret = eq_fir_setup(cd, sourceb->stream.channels);
@@ -596,9 +608,12 @@ static int eq_fir_prepare(struct comp_dev *dev)
 
 	cd->eq_fir_func = eq_fir_passthrough;
 
+	comp_err(dev, "eq_fir_prepare() ret %d", ret);
+
 	return ret;
 
 err:
+	comp_err(dev, "eq_fir_prepare() ret err %d", ret);
 	comp_set_state(dev, COMP_TRIGGER_RESET);
 	return ret;
 }

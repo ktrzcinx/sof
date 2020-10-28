@@ -122,6 +122,9 @@ static struct ipc_comp_dev *ipc_get_ppl_comp(struct ipc *ipc,
 	/* first try to find the module in the pipeline */
 	list_for_item(clist, &ipc->comp_list) {
 		icd = container_of(clist, struct ipc_comp_dev, list);
+		tr_err(&ipc_tr, "ipc_get_ppl_comp(): icd %p", icd);
+		tr_err(&ipc_tr, "ipc_get_ppl_comp(): icd->type %d core %d pipe_id %d",
+		icd->type, icd->core, dev_comp_pipe_id(icd->cd));
 		if (icd->type != COMP_TYPE_COMPONENT) {
 			platform_shared_commit(icd, sizeof(*icd));
 			continue;
@@ -132,6 +135,7 @@ static struct ipc_comp_dev *ipc_get_ppl_comp(struct ipc *ipc,
 			continue;
 		}
 
+		// comp_invalidate(icd->cd);
 		if (dev_comp_pipe_id(icd->cd) == pipeline_id &&
 		    list_is_empty(comp_buffer_list(icd->cd, dir)))
 			return icd;
@@ -142,6 +146,9 @@ static struct ipc_comp_dev *ipc_get_ppl_comp(struct ipc *ipc,
 	/* it's connected pipeline, so find the connected module */
 	list_for_item(clist, &ipc->comp_list) {
 		icd = container_of(clist, struct ipc_comp_dev, list);
+		tr_err(&ipc_tr, "ipc_get_ppl_comp(): icd %p", icd);
+		tr_err(&ipc_tr, "ipc_get_ppl_comp(): icd->type %d core %d pipe_id %d",
+		       icd->type, icd->core, dev_comp_pipe_id(icd->cd));
 		if (icd->type != COMP_TYPE_COMPONENT) {
 			platform_shared_commit(icd, sizeof(*icd));
 			continue;

@@ -182,13 +182,13 @@ static int pipeline_for_each_comp(struct comp_dev *current, struct comp_buffer *
 	uint32_t flags;
 	int err;
 
-	comp_invalidate(current);
+	// comp_invalidate(current);
 	buffer_list = comp_buffer_list(current, dir);
 
 	/* call comp_func on current component entry */
 	if (ctx->comp_func && !ctx->call_comp_func_on_exit) {
 		err = ctx->comp_func(current, calling_buf, ctx, dir);
-		comp_writeback(current);
+		// comp_writeback(current);
 		if (err < 0 || err == PPL_STATUS_PATH_STOP)
 			return err;
 	}
@@ -234,7 +234,7 @@ static int pipeline_for_each_comp(struct comp_dev *current, struct comp_buffer *
 	/* call comp_func on current component exit */
 	if (ctx->comp_func && ctx->call_comp_func_on_exit) {
 		err = ctx->comp_func(current, calling_buf, ctx, dir);
-		comp_writeback(current);
+		// comp_writeback(current);
 		if (err < 0 || err == PPL_STATUS_PATH_STOP)
 			return err;
 	}
