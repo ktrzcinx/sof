@@ -257,6 +257,29 @@ static void dw_dma_channel_put(struct dma_chan_data *channel)
 	spin_unlock_irq(&channel->dma->lock, flags);
 }
 
+static void dump_llp(struct dma *dma, int channel, struct dw_lli *lli, int depth)
+{
+	tr_info(&dwdma_tr, "dump_llp(): cfg_lo 0x%x cfg_hi 0x%x ctrl_lo 0x%x ctrl_hi 0x%x",
+		dma_reg_read(dma, DW_CFG_LOW(channel)),
+		dma_reg_read(dma, DW_CFG_HIGH(channel)),
+		dma_reg_read(dma, DW_CTRL_LOW(channel)),
+		dma_reg_read(dma, DW_CTRL_HIGH(channel)));
+	tr_info(&dwdma_tr, "dump_llp(): LLI CH_EN 0x%x SAR 0x%x DAR 0x%x LLP 0x%x",
+		dma_reg_read(dma, DW_DMA_CHAN_EN),
+		dma_reg_read(dma, DW_SAR(channel)),
+		dma_reg_read(dma, DW_DAR(channel)),
+		dma_reg_read(dma, DW_LLP(channel)));
+
+	lli = platform_dw_dma_lli_get(lli);
+	while (depth--) {
+		tr_info(&dwdma_tr, "dump_llp() 0x%p:   SAR 0x%x \tDAR 0x%x \tLLI->LLP 0x%x",
+			lli, lli->sar, lli->dar, lli->llp);
+		tr_info(&dwdma_tr, "dump_llp(): sstat 0x%x \tdstat 0x%x \tctrl_lo 0x%x \tctrl_hi 0x%x",
+			lli->sstat, lli->dstat, lli->ctrl_lo, lli->ctrl_hi);
+		lli = platform_dw_dma_lli_get((struct dw_lli *)lli->llp);
+	}
+}
+
 static int dw_dma_start(struct dma_chan_data *channel)
 {
 	struct dma *dma = channel->dma;
@@ -332,6 +355,10 @@ static int dw_dma_start(struct dma_chan_data *channel)
 	channel->status = COMP_STATE_ACTIVE;
 	dma_reg_write(dma, DW_DMA_CHAN_EN, DW_CHAN_UNMASK(channel->index));
 
+	if (channel->direction == DMA_DIR_LMEM_TO_HMEM ||
+	    channel->direction == DMA_DIR_MEM_TO_DEV)
+		dump_llp(dma, channel->index, lli, 5);
+
 out:
 	irq_local_enable(flags);
 
@@ -345,14 +372,24 @@ static int dw_dma_release(struct dma_chan_data *channel)
 
 	tr_info(&dwdma_tr, "dw_dma_release(): dma %d channel %d release, LLP %p",
 		channel->dma->plat_data.id, channel->index, dw_chan->lli_current->llp);
+	tr_info(&dwdma_tr, "dw_dma_release(): ctrl_lo 0x%x ctrl_hi 0x%x cfg_lo 0x%x cfg_hi 0x%x",
+		dma_reg_read(channel->dma, DW_CTRL_LOW(channel->index)),
+		dma_reg_read(channel->dma, DW_CTRL_HIGH(channel->index)),
+		dma_reg_read(channel->dma, DW_CFG_LOW(channel->index)),
+		dma_reg_read(channel->dma, DW_CFG_HIGH(channel->index)));
+	tr_info(&dwdma_tr, "dw_dma_release(): LLI CH_EN 0x%x SAR 0x%x DAR 0x%x LLP 0x%x",
+		dma_reg_read(dma, DW_DMA_CHAN_EN),
+		dma_reg_read(channel->dma, DW_SAR(channel->index)),
+		dma_reg_read(channel->dma, DW_DAR(channel->index)),
+		dma_reg_read(channel->dma, DW_LLP(channel->index)));
+	tr_info(&dwdma_tr, "dw_dma_release(): LLI LLP 0x%x", dw_chan->lli_current->llp);
 
 	irq_local_disable(flags);
 
 	/* get next lli for proper release */
 	dw_chan->lli_current = (struct dw_lli *)dw_chan->lli_current->llp;
 
-	/* prepare to start */
-	dw_dma_stop(channel);
+	dump_llp(dma, channel->index, dw_chan->lli_current, 5);
 
 	irq_local_enable(flags);
 
@@ -1093,6 +1130,7 @@ static int dw_dma_get_data_size(struct dma_chan_data *channel,
 	if (!(dma_reg_read(channel->dma, DW_DMA_CHAN_EN) &
 	      DW_CHAN(channel->index))) {
 		tr_err(&dwdma_tr, "dw_dma_get_data_size(): xrun detected");
+		dump_llp(channel->dma, channel->index, dw_chan->lli_current, 5);
 		return -ENODATA;
 	}
 #endif
