@@ -675,15 +675,19 @@ static int dai_comp_trigger_internal(struct comp_dev *dev, int cmd)
 		/* only start the DAI if we are not XRUN handling */
 		if (dd->xrun == 0) {
 			/* recover valid start position */
+			// if (dev->direction == SOF_IPC_STREAM_PLAYBACK) {
+			// 	comp_update_buffer_consume(dd->local_buffer, ret);
+			// 	comp_info(dev, "dai_comp_trigger_internal(), move source buffer by %d bytes", ret);
+			// }
 			ret = dma_release(dd->chan);
 			if (ret < 0)
 				return ret;
 
 			/* start the DAI */
 			dai_trigger(dd->dai, cmd, dev->direction);
-			ret = dma_start(dd->chan);
-			if (ret < 0)
-				return ret;
+			// ret = dma_start(dd->chan);
+			// if (ret < 0)
+			// 	return ret;
 		} else {
 			dd->xrun = 0;
 		}
@@ -844,10 +848,10 @@ static int dai_copy(struct comp_dev *dev)
 		value = *((int32_t *)audio_stream_read_frag_s32(&dd->local_buffer->stream, 0));
 
 	if (dev->direction == SOF_IPC_STREAM_PLAYBACK)
-	comp_info(dev, "dai_copy(), dir: %d copy_bytes= 0x%x, frames= %d, first sample value %d",
-		 dev->direction, copy_bytes,
-		 samples / buf->stream.channels,
-		 value);
+		comp_info(dev, "dai_copy(), dir: %d copy_bytes= 0x%x, frames= %d, first sample value %d",
+			  dev->direction, copy_bytes,
+			  samples / buf->stream.channels,
+			  value);
 
 	/* Check possibility of glitch occurrence */
 	if (dev->direction == SOF_IPC_STREAM_PLAYBACK &&

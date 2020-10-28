@@ -368,7 +368,13 @@ out:
 static int dw_dma_release(struct dma_chan_data *channel)
 {
 	struct dw_dma_chan_data *dw_chan = dma_chan_get_data(channel);
+	// struct dw_lli *lli = dw_chan->lli_current;
+	struct dma *dma = channel->dma;
+	// uint32_t words_per_tfr = 0;
+	uint32_t bytes_left;
+	// uint32_t next_ptr;
 	uint32_t flags;
+	int i;
 
 	tr_info(&dwdma_tr, "dw_dma_release(): dma %d channel %d release, LLP %p",
 		channel->dma->plat_data.id, channel->index, dw_chan->lli_current->llp);
@@ -388,12 +394,65 @@ static int dw_dma_release(struct dma_chan_data *channel)
 
 	/* get next lli for proper release */
 	dw_chan->lli_current = (struct dw_lli *)dw_chan->lli_current->llp;
+	// platform_dw_dma_lli_get(lli)->ctrl_hi &= ~DW_CTLH_DONE(1);
+	/* LLP mode - write LLP pointer unless in scatter mode */
+	// dma_reg_write(dma, DW_LLP(channel->index),
+	// 	      (lli->ctrl_lo & (DW_CTLL_LLP_D_EN | DW_CTLL_LLP_S_EN)) ?
+	// 	      (uint32_t)lli : 0);
 
+	// if (lli->ctrl_lo & DW_CTLL_D_SCAT_EN) {
+	// 	words_per_tfr = (lli->ctrl_hi & DW_CTLH_BLOCK_TS_MASK) >>
+	// 		((lli->ctrl_lo & DW_CTLL_DST_WIDTH_MASK) >>
+	// 		DW_CTLL_DST_WIDTH_SHIFT);
+	// 	dma_reg_write(dma, DW_DSR(channel->index),
+	// 		      DW_DSR_DSC(words_per_tfr) |
+	// 		      DW_DSR_DSI(words_per_tfr));
+	// }
+	for (i = 0; i < channel->desc_count; i++)
+		dw_chan->lli[i].ctrl_hi &= ~DW_CTLH_DONE(1);
+
+	dcache_writeback_region(dw_chan->lli,
+				sizeof(struct dw_lli) * channel->desc_count);
+	dcache_invalidate_region(dw_chan->lli,
+				sizeof(struct dw_lli) * channel->desc_count);
+	// tr_info(&dwdma_tr, "LLI clear: TFR 0x%x block 0x%x src 0x%x dst 0x%x",
+	// 	dma_reg_read(dma, DW_CLEAR_TFR),
+	// 	dma_reg_read(dma, DW_CLEAR_BLOCK),
+	// 	dma_reg_read(dma, DW_CLEAR_SRC_TRAN),
+	// 	dma_reg_read(dma, DW_CLEAR_DST_TRAN));
+	// tr_info(&dwdma_tr, "LLI clear: err 0x%x",
+	// 	dma_reg_read(dma, DW_CLEAR_ERR));
+	// dma_reg_write(dma, DW_CLEAR_TFR, 0);
+	// dma_reg_write(dma, DW_CLEAR_BLOCK, 0);
+	// dma_reg_write(dma, DW_CLEAR_SRC_TRAN, 0);
+	// dma_reg_write(dma, DW_CLEAR_DST_TRAN, 0);
+	// dma_reg_write(dma, DW_CLEAR_ERR, 0);
+	wait_delay(100);
+	dma_reg_write(dma, DW_CFG_LOW(channel->index), dw_chan->cfg_lo); // to ten od suspend
+	// dma_reg_write(dma, DW_CFG_HIGH(channel->index), dw_chan->cfg_hi);
+	// dma_reg_write(dma, DW_CTRL_HIGH(channel->index), lli->ctrl_hi);
+	// if (!(dma_reg_read(dma, DW_DMA_CHAN_EN) & DW_CHAN_UNMASK(channel->index)))
+	// 	dma_reg_write(dma, DW_DMA_CHAN_EN, DW_CHAN_UNMASK(channel->index));
+
+	// next_ptr = DW_DMA_LLI_ADDRESS(dw_chan->lli_current, channel->direction);
+	// if (next_ptr >= dw_chan->ptr_data.current_ptr)
+	// 	bytes_left = next_ptr - dw_chan->ptr_data.current_ptr;
+	// else
+	// 	/* pointer wrap */
+	// 	bytes_left = (dw_chan->ptr_data.end_ptr -
+	// 		dw_chan->ptr_data.current_ptr) +
+	// 		(next_ptr - dw_chan->ptr_data.start_ptr);
+	
+
+	// /* prepare to start */
+	// dw_dma_stop(channel);
+
+	channel->status = COMP_STATE_ACTIVE;
 	dump_llp(dma, channel->index, dw_chan->lli_current, 5);
 
 	irq_local_enable(flags);
 
-	return 0;
+	return bytes_left;
 }
 
 static int dw_dma_pause(struct dma_chan_data *channel)
